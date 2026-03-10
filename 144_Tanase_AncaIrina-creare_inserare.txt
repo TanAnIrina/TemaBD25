@@ -1,0 +1,284 @@
+DROP TABLE Participare_Concurs CASCADE CONSTRAINTS;
+DROP TABLE Participare_club CASCADE CONSTRAINTS;
+DROP TABLE Lista_de_lectura CASCADE CONSTRAINTS;
+DROP TABLE Colaborare CASCADE CONSTRAINTS;
+DROP TABLE Recenzie CASCADE CONSTRAINTS;
+DROP TABLE Prietenie CASCADE CONSTRAINTS;
+DROP TABLE Intalnire_club CASCADE CONSTRAINTS;
+DROP TABLE Club_de_lectura CASCADE CONSTRAINTS;
+DROP TABLE Concurs_de_lectura CASCADE CONSTRAINTS;
+DROP TABLE Carte CASCADE CONSTRAINTS;
+DROP TABLE Gen_literar CASCADE CONSTRAINTS;
+DROP TABLE Autor CASCADE CONSTRAINTS;
+DROP TABLE Utilizator CASCADE CONSTRAINTS;
+
+DROP SEQUENCE secv_utilizator;
+DROP SEQUENCE secv_carte;
+DROP SEQUENCE secv_gen;
+DROP SEQUENCE secv_autor;
+DROP SEQUENCE secv_recenzie;
+DROP SEQUENCE secv_club;
+DROP SEQUENCE secv_intalnire;
+DROP SEQUENCE secv_concurs;
+
+CREATE SEQUENCE secv_utilizator
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_carte
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_gen
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_autor
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_recenzie
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_club
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_intalnire
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE SEQUENCE secv_concurs
+START WITH 1
+INCREMENT BY 1
+NOCACHE
+NOCYCLE;
+
+CREATE TABLE Utilizator (
+    ID_Utilizator NUMBER(9) PRIMARY KEY,
+    Nume_Utilizator VARCHAR2(20) UNIQUE NOT NULL,
+    Email VARCHAR2(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE Prietenie (
+    ID_Utilizator1 NUMBER(9),
+    ID_Utilizator2 NUMBER(9),
+    PRIMARY KEY (ID_Utilizator1, ID_Utilizator2),
+    FOREIGN KEY (ID_Utilizator1) REFERENCES Utilizator(ID_Utilizator),
+    FOREIGN KEY (ID_Utilizator2) REFERENCES Utilizator(ID_Utilizator)
+);
+
+CREATE TABLE Club_de_lectura (
+    ID_Club NUMBER(9) PRIMARY KEY,
+    Nume VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE Participare_club (
+    ID_Utilizator NUMBER(9),
+    ID_Club NUMBER(9),
+    PRIMARY KEY (ID_Utilizator, ID_Club),
+    FOREIGN KEY (ID_Utilizator) REFERENCES UTILIZATOR(ID_Utilizator),
+    FOREIGN KEY (ID_Club) REFERENCES CLUB_DE_LECTURA(ID_Club)
+);
+
+CREATE TABLE Concurs_de_lectura (
+    ID_Concurs NUMBER(9) PRIMARY KEY,
+    Data_Incepere DATE NOT NULL,
+    Data_Finalizare DATE NOT NULL
+);
+
+CREATE TABLE Participare_Concurs (
+    ID_Concurs NUMBER(9),
+    ID_Utilizator NUMBER(9),
+    PRIMARY KEY (ID_Concurs, ID_Utilizator),
+    FOREIGN KEY (ID_Concurs) REFERENCES Concurs_de_Lectura(ID_Concurs),
+    FOREIGN KEY (ID_Utilizator) REFERENCES Utilizator(ID_Utilizator)
+);
+
+CREATE TABLE Gen_literar (
+    ID_Gen NUMBER(9) PRIMARY KEY,
+    Nume_Gen VARCHAR2(50)
+);
+
+CREATE TABLE Carte (
+    ID_Carte NUMBER(9) PRIMARY KEY,
+    Titlu VARCHAR2(100) NOT NULL,
+    ID_Gen NUMBER(9),
+    FOREIGN KEY (ID_Gen) REFERENCES Gen_literar(ID_Gen)
+);
+
+CREATE TABLE Autor (
+    ID_Autor NUMBER(9) PRIMARY KEY,
+    Pseudonim VARCHAR2(100) NOT NULL
+);
+
+CREATE TABLE Intalnire_club (
+    ID_Intalnire NUMBER(9) PRIMARY KEY,
+    Data_Intalnire DATE NOT NULL,
+    ID_Club NUMBER(9),
+    ID_Autor NUMBER(9),
+    FOREIGN KEY (ID_Club) REFERENCES CLUB_DE_LECTURA(ID_Club),
+    FOREIGN KEY (ID_Autor) REFERENCES AUTOR(ID_Autor) ON DELETE SET NULL
+);
+
+CREATE TABLE Recenzie (
+    ID_Recenzie NUMBER(9) PRIMARY KEY,
+    ID_Utilizator NUMBER(9),
+    ID_Carte NUMBER(9),
+    Continut VARCHAR2(500),
+    Data DATE,
+    FOREIGN KEY (ID_Utilizator) REFERENCES Utilizator(ID_Utilizator),
+    FOREIGN KEY (ID_Carte) REFERENCES Carte(ID_Carte)
+);
+
+CREATE TABLE Lista_de_lectura (
+    ID_Utilizator NUMBER(9),
+    ID_Carte NUMBER(9),
+    Status VARCHAR2(25 CHAR) CHECK (Status IN ('citita', 'in curs de citire', 'va fi citita')),
+    PRIMARY KEY (ID_Utilizator, ID_Carte),
+    FOREIGN KEY (ID_Utilizator) REFERENCES Utilizator(ID_Utilizator),
+    FOREIGN KEY (ID_Carte) REFERENCES Carte(ID_Carte)
+);
+
+CREATE TABLE Colaborare (
+    ID_Carte NUMBER(9),
+    ID_Autor NUMBER(9),
+    PRIMARY KEY (ID_Carte, ID_Autor),
+    FOREIGN KEY (ID_Carte) REFERENCES Carte(ID_Carte),
+    FOREIGN KEY (ID_Autor) REFERENCES Autor(ID_Autor)
+);
+
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Elif Shafak');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Mircea Cartarescu');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Marin Preda');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Dazai Osamu');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Virginia Wolf');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Ioana Parvulescu');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Hermann Hesse');
+
+INSERT INTO Utilizator VALUES (secv_utilizator.NEXTVAL, 'gpcsia', 'ancait17@gmail.com');
+INSERT INTO Utilizator VALUES (secv_utilizator.NEXTVAL, 'jimmychaw', 'thejeanistofficial@yahoo.com');
+INSERT INTO Utilizator VALUES (secv_utilizator.NEXTVAL, 'utilizator_misterios', 'throwawayemail@gmail.com');
+INSERT INTO Utilizator VALUES (secv_utilizator.NEXTVAL, 'Andrei_Tudor_P', 'popescutudorandrei@hotmail.com');
+INSERT INTO Utilizator VALUES (secv_utilizator.NEXTVAL, 'cititorul45', 'businessaccount@gmail.com');
+
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'fictiune');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'non-fictiune');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'fantezie');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'science-fiction');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'biografie');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'istoric');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'dragoste');
+INSERT INTO Gen_literar VALUES (secv_gen.NEXTVAL, 'chick lit');
+
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, '10 minute s 38 de secunde in lumea asta stranie', 1);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Theodoros', 6);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Cel mai iubit dintre pamanteni', 1);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'No longer human', 1);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Orlando', 3);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Aurul pisicii', 7);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Lupul de stepa', 1);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Magisterium', 3);
+INSERT INTO Carte VALUES (secv_carte.NEXTVAL, 'Printul Nemilos', 3);
+
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Holly Black');
+INSERT INTO Autor VALUES (secv_autor.NEXTVAL, 'Cassandra Clare');
+
+INSERT INTO Colaborare VALUES(8, 3);
+INSERT INTO Colaborare VALUES(8, 9);
+INSERT INTO Colaborare VALUES(1, 1);
+INSERT INTO Colaborare VALUES(2, 2);
+INSERT INTO Colaborare VALUES(3, 4);
+INSERT INTO Colaborare VALUES(4, 5);
+INSERT INTO Colaborare VALUES(5, 6);
+INSERT INTO Colaborare VALUES(6, 7);
+INSERT INTO Colaborare VALUES(7, 8);
+INSERT INTO Colaborare VALUES(9, 3);
+
+INSERT INTO Prietenie VALUES(1, 5);
+INSERT INTO Prietenie VALUES(1, 3);
+INSERT INTO Prietenie VALUES(2, 4);
+INSERT INTO Prietenie VALUES(2, 5);
+INSERT INTO Prietenie VALUES(3, 5);
+INSERT INTO Prietenie VALUES(4, 5);
+INSERT INTO Prietenie VALUES(1, 4);
+INSERT INTO Prietenie VALUES(1, 2);
+INSERT INTO Prietenie VALUES(2, 3);
+INSERT INTO Prietenie VALUES(3, 4);
+
+INSERT INTO Recenzie VALUES (secv_recenzie.NEXTVAL, 1, 1, 'As recomanda cartea asta oricui. 10/10', SYSDATE);
+INSERT INTO Recenzie VALUES (secv_recenzie.NEXTVAL, 1, 4, 'M-am cam plictisit', TO_DATE('2024-04-15', 'YYYY-MM-DD'));
+INSERT INTO Recenzie VALUES (secv_recenzie.NEXTVAL, 3, 4, 'Mie... mi-a placut... foarte mult... Simt ca... domnul Dazai Osamu... ma intelege', TO_DATE('2022-10-03', 'YYYY-MM-DD'));
+INSERT INTO Recenzie VALUES (secv_recenzie.NEXTVAL, 2, 3, 'Autorii romani ar trebui sa fie cititi mai des', SYSDATE);
+INSERT INTO Recenzie VALUES (secv_recenzie.NEXTVAL, 4, 9, 'M-a obligat fiica mea sa citesc aceasta carte. Vai de generatia asta', TO_DATE('2025-02-19', 'YYYY-MM-DD'));
+INSERT INTO Recenzie VALUES (secv_recenzie.NEXTVAL, 5, 2, 'O sa inramez aceasta carte. Este excelenta', SYSDATE);
+
+INSERT INTO Lista_de_lectura VALUES (1, 1, 'citita');
+INSERT INTO Lista_de_lectura VALUES (1, 4, 'citita');
+INSERT INTO Lista_de_lectura VALUES (3, 4, 'citita');
+INSERT INTO Lista_de_lectura VALUES (2, 3, 'citita');
+INSERT INTO Lista_de_lectura VALUES (4, 9, 'citita');
+INSERT INTO Lista_de_lectura VALUES (5, 2, 'citita');
+INSERT INTO Lista_de_lectura VALUES (1, 5, 'in curs de citire');
+INSERT INTO Lista_de_lectura VALUES (1, 3, 'va fi citita');
+INSERT INTO Lista_de_lectura VALUES (4, 6, 'va fi citita');
+INSERT INTO Lista_de_lectura VALUES (5, 1, 'in curs de citire');
+INSERT INTO Lista_de_lectura VALUES (3, 7, 'in curs de citire');
+INSERT INTO Lista_de_lectura VALUES (2, 8, 'va fi citita');
+
+INSERT INTO Concurs_de_lectura VALUES (secv_concurs.NEXTVAL, TO_DATE('15-01-2025', 'DD-MM-YYYY'), TO_DATE('15-02-2025', 'DD-MM-YYYY'));
+INSERT INTO Concurs_de_lectura VALUES (secv_concurs.NEXTVAL, TO_DATE('01-03-2023', 'DD-MM-YYYY'), TO_DATE('31-03-2023', 'DD-MM-YYYY'));
+INSERT INTO Concurs_de_lectura VALUES (secv_concurs.NEXTVAL, TO_DATE('10-06-2025', 'DD-MM-YYYY'), TO_DATE('10-07-2025', 'DD-MM-YYYY'));
+INSERT INTO Concurs_de_lectura VALUES (secv_concurs.NEXTVAL, TO_DATE('01-09-2024', 'DD-MM-YYYY'), TO_DATE('01-10-2024', 'DD-MM-YYYY'));
+INSERT INTO Concurs_de_lectura VALUES (secv_concurs.NEXTVAL, TO_DATE('20-11-2024', 'DD-MM-YYYY'), TO_DATE('20-12-2024', 'DD-MM-YYYY'));
+
+INSERT INTO Participare_Concurs VALUES (1, 1);
+INSERT INTO Participare_Concurs VALUES (1, 3);
+INSERT INTO Participare_Concurs VALUES (2, 2);
+INSERT INTO Participare_Concurs VALUES (3, 1);
+INSERT INTO Participare_Concurs VALUES (3, 2);
+INSERT INTO Participare_Concurs VALUES (3, 5);
+INSERT INTO Participare_Concurs VALUES (4, 3);
+INSERT INTO Participare_Concurs VALUES (4, 2);
+INSERT INTO Participare_Concurs VALUES (5, 2);
+INSERT INTO Participare_Concurs VALUES (5, 5);
+INSERT INTO Participare_Concurs VALUES (5, 1);
+
+INSERT INTO Club_de_lectura VALUES (secv_club.NEXTVAL, 'Citiorii draguti');
+INSERT INTO Club_de_lectura VALUES (secv_club.NEXTVAL, 'Fanclub romantasy');
+INSERT INTO Club_de_lectura VALUES (secv_club.NEXTVAL, 'History nerds');
+INSERT INTO Club_de_lectura VALUES (secv_club.NEXTVAL, 'Citim si bem cafea');
+INSERT INTO Club_de_lectura VALUES (secv_club.NEXTVAL, 'Cuvinte pe paine');
+
+INSERT INTO Participare_club VALUES (1, 1);
+INSERT INTO Participare_club VALUES (2, 1);
+INSERT INTO Participare_club VALUES (2, 2);
+INSERT INTO Participare_club VALUES (2, 3);
+INSERT INTO Participare_club VALUES (2, 4);
+INSERT INTO Participare_club VALUES (2, 5);
+INSERT INTO Participare_club VALUES (3, 3);
+INSERT INTO Participare_club VALUES (4, 5);
+INSERT INTO Participare_club VALUES (5, 2);
+INSERT INTO Participare_club VALUES (5, 4);
+
+INSERT INTO Intalnire_club VALUES (secv_intalnire.NEXTVAL, SYSDATE, 1, 3);
+INSERT INTO Intalnire_club VALUES (secv_intalnire.NEXTVAL, TO_DATE('12-02-2024', 'DD-MM-YYYY'), 2, 9);
+INSERT INTO Intalnire_club VALUES (secv_intalnire.NEXTVAL, TO_DATE('20-03-2025', 'DD-MM-YYYY'), 3, 2);
+INSERT INTO Intalnire_club VALUES (secv_intalnire.NEXTVAL, TO_DATE('27-05-2023', 'DD-MM-YYYY'), 4, 4);
+INSERT INTO Intalnire_club VALUES (secv_intalnire.NEXTVAL, TO_DATE('05-06-2025', 'DD-MM-YYYY'), 5, NULL);
+

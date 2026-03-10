@@ -1,0 +1,278 @@
+-- Exercitiul 12
+
+-- 1. Listeaza toate datele la care este organizată o întâlnire a unui club 
+-- de lectură, specificând ce autor este invitat sau expresia „Nu este nimeni invitat”. 
+-- Adauga, de asemenea, titlul cărților de gen ficțiune scrise de autorii invitați. 
+-- Ordoneaza după titlul cărților de ficțiune.
+
+-- Elemente utilizate: NVL și DECODE în cadrul aceleiași cereri și ordonare.
+
+select distinct
+    i.data_intalnire, 
+    nvl(a.pseudonim, 'Nu este nimeni invitat') as autor_invitat,
+    decode(g.nume_gen, 'fictiune', c.titlu, 'nu are') as carte_fictiune
+from intalnire_club i
+left join autor a on i.id_autor = a.id_autor
+left join colaborare o on o.id_autor = a.id_autor
+left join carte c on o.id_carte = c.id_carte
+left join gen_literar g on g.id_gen = c.id_gen
+order by carte_fictiune;
+
+
+-- 2. Afișează numele de utilizator și emailul tuturor utilizatorilor care au lăsat 
+-- cel puțin o recenzie pe o carte citită și care au participat la 2 concursuri de 
+-- lectură în ultimii doi ani (2024 și 2025).
+
+-- Element folosite: grupări de date, funcții grup, filtrare la nivel de grupuri cu 
+-- subcereri nesincronizate (în clauza de HAVING), utilizarea a unui bloc de cerere (WITH)
+
+with carti_rec as
+(
+    select 
+        r.id_carte,
+        r.id_utilizator
+    from recenzie r
+    join lista_de_lectura l on r.id_carte = l.id_carte
+    where r.id_utilizator = l.id_utilizator
+    and lower(l.status) = 'citita'
+) 
+select 
+    u.nume_utilizator,
+    u.email
+from utilizator u
+join recenzie r on u.id_utilizator = r.id_utilizator
+join carti_rec cr on cr.id_utilizator = u.id_utilizator AND cr.id_carte = r.id_carte
+group by u.id_utilizator, u.nume_utilizator, u.email
+having count(distinct cr.id_carte) >= 1
+    and (
+        select count(*)
+        from participare_concurs p
+        join concurs_de_lectura lc on lc.id_concurs = p.id_concurs
+        where p.id_utilizator = u.id_utilizator
+        and to_char(lc.data_incepere, 'YYYY') >= '2024'
+    ) >= 2;
+
+-- 3. Listeaza genurile literare si cartile apartinand acestora pentru autorii care au 
+-- participat la o intalnire in 2024 a unui club al caror membrii au participat
+-- la concursuri in acelasi an.
+
+-- Elemente folosite: subcereri sincronizate în care intervin cel puțin 3 tabele.
+
+select
+    g.nume_gen,
+    c.titlu
+from gen_literar g
+join carte c on c.id_gen = g.id_gen
+join colaborare o on o.id_carte = c.id_carte
+join autor a on a.id_autor = o.id_autor
+join intalnire_club ic on a.id_autor = ic.id_autor
+where to_char(ic.data_intalnire, 'yyyy') = '2024'
+and
+    (
+        select count(*)
+        from utilizator u
+        join participare_club pc on u.id_utilizator = pc.id_utilizator
+        join club_de_lectura cl on cl.id_club = pc.id_club
+        join participare_concurs po on po.id_utilizator = u.id_utilizator
+        join concurs_de_lectura cdl on cdl.id_concurs = po.id_concurs
+        where ic.id_club = cl.id_club
+        and to_char(cdl.data_incepere, 'yyyy') = '2024'
+    ) > 0
+
+
+-- 4. Listeaza toti autorii care au scris o carte de tip fictiune care se afla 
+-- pe lista de lectura a unui utilizator cu statusul ‘va fi citita’.
+
+-- Elemente utilizate: subcereri nesincronizate în clauza FROM
+
+select distinct
+    a.pseudonim
+from autor a
+join 
+    (
+        select
+            o.id_autor,
+            o.id_carte
+        from colaborare o
+        join carte c on o.id_carte = c.id_carte
+        join gen_literar g on g.id_gen = c.id_gen
+        join lista_de_lectura ldc on ldc.id_carte = c.id_carte
+        where lower(ldc.status) = 'va fi citita'
+        and lower(g.nume_gen) = 'fictiune'
+    ) f on f.id_autor = a.id_autor;
+
+-- 5. Listeaza autorii și cărțile lor de tip fictiune care sunt pe lista de lectură 
+-- a unui utilizator cu statusul „va fi citita”, iar utilizatorul a fost la un concurs 
+-- de lectura în ultimele 3 luni. 
+
+-- Elemente folosite: 2 funcții pe șiruri de caractere, 2 funcții pe date calendaristice, o expresie CASE
+
+select distinct
+    'Autor: ' || a.pseudonim as nume_formatat,
+    c.titlu,
+    to_char(cl.data_incepere, 'month') as luna_participare,
+    case
+        when to_char(cl.data_incepere, 'yyyy') = to_char(sysdate, 'yyyy')
+        then 'Participat in acest an'
+        else 'Participat in alt an'
+    end as status_participare
+from autor a
+join colaborare o on o.id_autor = a.id_autor
+join carte c on o.id_carte = c.id_carte
+join gen_literar g on g.id_gen = c.id_gen
+join lista_de_lectura ldc on ldc.id_carte = c.id_carte
+join utilizator u on u.id_utilizator = ldc.id_utilizator
+join participare_concurs pc on pc.id_utilizator = u.id_utilizator
+join concurs_de_lectura cl on cl.id_concurs = pc.id_concurs
+where g.nume_gen = 'fictiune'
+and lower(ldc.status) = 'va fi citita'
+and cl.data_incepere >= to_date(to_char(add_months(sysdate, -3), 'YYYY-MM-DD'), 'YYYY-MM-DD');
+
+-----------------------------------------------
+
+-- Exercitul 13
+
+-- Operația 1: Ștergeți toate relațiile de prietenie dintre utilizatori care au citit aceeași carte.
+
+delete from prietenie p
+where
+    (
+        select count(*)
+        from lista_de_lectura l1
+        join lista_de_lectura l2 on l1.id_carte = l2.id_carte
+        where l1.id_utilizator = p.id_utilizator1
+        and l2.id_utilizator = p.id_utilizator2
+        and l1.id_utilizator <> l2.id_utilizator
+    ) > 0;
+
+-- Operația 2: Adăugați în dreptul fiecărui titlu de carte șirul „:3” dacă autorul a participat 
+-- la o întâlnire de club în ultimul an.
+
+update carte c
+set c.titlu = c.titlu || ' :3'
+where c.id_carte in
+    (
+        select 
+            d.id_carte
+        from carte d
+        join colaborare o on o.id_carte = d.id_carte
+        join autor a on o.id_autor = a.id_autor
+        join intalnire_club ic on ic.id_autor = a.id_autor
+        where to_char(ic.data_intalnire, 'yyyy') = '2025'
+    );
+
+-- Operația 3: Schimbă data de terminare a tuturor concursurilor de lectură care au avut loc 
+-- in 2024 si care au avut maxim 2 participanti în ‘01-01-1999’ .
+
+update concurs_de_lectura cl
+set cl.data_finalizare = to_date('01-01-1999', 'dd-mm-yyyy')
+where to_char(cl.data_incepere, 'yyyy') = '2024'
+and 
+    (
+        select count(*)
+        from participare_concurs pc
+        where pc.id_concurs = cl.id_concurs
+    ) <= 2;
+
+
+-----------------------------------------------
+
+-- Exercitiul 14
+-- Să se creeze o vizualizare care conține pentru fiecare utilizator toate cărțile de pe lista de lectură, 
+-- însoțite numărul de autori, status, gen literar și posibile recenzii lăsate.
+
+create or replace view vizualizare as
+select
+    u.nume_utilizator as username,
+    c.titlu as titlu,
+    count(distinct col.id_autor) as numar_autori,
+    l.status as status,
+    g.nume_gen as gen_literar,
+    r.continut as recenzie
+from utilizator u
+join lista_de_lectura l on u.id_utilizator = l.id_utilizator
+join carte c on l.id_carte = c.id_carte
+join gen_literar g on c.id_gen = g.id_gen
+left join colaborare col on col.id_carte = c.id_carte
+left join recenzie r on r.id_utilizator = u.id_utilizator and r.id_carte = c.id_carte
+group by u.nume_utilizator, c.titlu, l.status, g.nume_gen, r.continut;
+
+-----------------------------------------------
+
+-- Exercitiul 15
+
+-- Outer join folosit: Afișează, pentru fiecare utilizator, numele de utilizator, cărțile din lista de 
+-- lectură (dacă există), statusul fiecărei cărți și conținutul posibililor recenzii. 
+
+select
+    u.nume_utilizator as username,
+    c.titlu as titlu_carte,
+    l.status as status_carte,
+    r.continut as recenzie
+from utilizator u
+full outer join lista_de_lectura l on u.id_utilizator = l.id_utilizator
+full outer join carte c on l.id_carte = c.id_carte
+full outer join recenzie r on u.id_utilizator = r.id_utilizator and c.id_carte     = r.id_carte
+order by u.nume_utilizator, c.titlu;
+
+
+-- Division folosit: Afișează toți utilizatorii care au numai cărți din genul literar ‘fictiune’ 
+-- in lista de lectura.
+
+
+select 
+    u.nume_utilizator
+from utilizator u
+where not exists (
+    (
+        select l.id_carte
+        from lista_de_lectura l
+        where l.id_utilizator = u.id_utilizator
+    )
+    minus
+    (
+        select c.id_carte
+        from carte c
+        join gen_literar g on c.id_gen = g.id_gen
+        where g.nume_gen = 'fictiune'
+    )
+);
+
+-- Analiza top-n folosita: Sa se afiseze, primele două cărți (titlu 
+-- si gen literar) după numărul de recenzii.
+
+
+with rec_per_carte as
+(
+        select 
+            c.titlu,
+            g.id_gen,
+            count(distinct r.id_recenzie) as nr_recenzii
+        from carte c
+        join recenzie r on c.id_carte = r.id_carte
+        join gen_literar g on c.id_gen = g.id_gen
+        group by c.titlu, g.id_gen
+)  
+select
+    g.nume_gen,
+    rec_per_carte.titlu,
+    rec_per_carte.nr_recenzii
+from gen_literar g
+join rec_per_carte on rec_per_carte.id_gen = g.id_gen
+order by rec_per_carte.nr_recenzii desc
+fetch first 2 rows only;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
